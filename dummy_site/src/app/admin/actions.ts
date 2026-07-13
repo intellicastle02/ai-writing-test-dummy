@@ -85,5 +85,8 @@ export async function deletePostAction(formData: FormData) {
     await dbDeletePost(id);
     revalidatePath("/");
     revalidatePath("/admin");
+    revalidatePath(`/posts/${id}`);
   }
+
+  redirect("/admin");
 }

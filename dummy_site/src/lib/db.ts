@@ -362,7 +362,11 @@ export async function deletePost(id: string): Promise<void> {
 
   if (githubConfig()) {
     const sha = await getGithubFileSha(current.slug);
-    if (sha) await deletePostFromGithub(current.slug, sha);
+    if (!sha) {
+      throw new Error(`Cannot delete post because GitHub file was not found: ${githubPath(current.slug)}`);
+    }
+
+    await deletePostFromGithub(current.slug, sha);
   } else if (canWriteLocally()) {
     deleteLocalPost(current.slug);
   } else {
