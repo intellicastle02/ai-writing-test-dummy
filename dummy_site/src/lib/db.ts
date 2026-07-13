@@ -24,6 +24,11 @@ const CONTENT_DIR = resolveContentDir();
 const GITHUB_CONTENT_DIR = process.env.GITHUB_CONTENT_DIR ?? "dummy_site/content/posts";
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
 
+type GithubFileRef = {
+  path: string;
+  sha: string;
+};
+
 export type Post = {
   id: string;
   slug: string;
@@ -60,6 +65,19 @@ function readableContentDirs(): string[] {
 
 function githubPath(slug: string): string {
   return `${GITHUB_CONTENT_DIR.replace(/\/$/, "")}/${slug}.md`;
+}
+
+function githubPathCandidates(slug: string): string[] {
+  return [
+    githubPath(slug),
+    `dummy_site/content/posts/${slug}.md`,
+    `content/posts/${slug}.md`,
+  ].filter((candidate, index, candidates) => candidates.indexOf(candidate) === index);
+}
+
+function githubContentsUrl(owner: string, repo: string, filePath: string, ref?: string): string {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(filePath)}`;
+  return ref ? `${url}?ref=${encodeURIComponent(ref)}` : url;
 }
 
 function nowIso(): string {
@@ -210,27 +228,31 @@ async function githubRequest<T>(url: string, init: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function getGithubFileSha(slug: string): Promise<string | undefined> {
+async function getGithubFileRef(slug: string): Promise<GithubFileRef | undefined> {
   const config = githubConfig();
   if (!config) return undefined;
 
-  const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${githubPath(slug)}?ref=${GITHUB_BRANCH}`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${config.token}`,
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
+  for (const filePath of githubPathCandidates(slug)) {
+    const url = githubContentsUrl(config.owner, config.repo, filePath, GITHUB_BRANCH);
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${config.token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
 
-  if (response.status === 404) return undefined;
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`GitHub API failed: ${response.status} ${errorText}`);
+    if (response.status === 404) continue;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`GitHub API failed while reading ${filePath}: ${response.status} ${errorText}`);
+    }
+
+    const data = (await response.json()) as { sha?: string };
+    if (data.sha) return { path: filePath, sha: data.sha };
   }
 
-  const data = (await response.json()) as { sha?: string };
-  return data.sha;
+  return undefined;
 }
 
 function base64Encode(value: string): string {
@@ -241,7 +263,7 @@ async function commitPostToGithub(
   input: PostInput,
   fileContent: string,
   message: string,
-  sha?: string
+  existingFile?: GithubFileRef
 ): Promise<void> {
   const config = githubConfig();
   if (!config) {
@@ -258,7 +280,7 @@ async function commitPostToGithub(
     message,
     content: base64Encode(fileContent),
     branch: GITHUB_BRANCH,
-    sha,
+    sha: existingFile?.sha,
   };
 
   const committerName = process.env.GITHUB_COMMIT_AUTHOR_NAME;
@@ -267,14 +289,15 @@ async function commitPostToGithub(
     body.committer = { name: committerName, email: committerEmail };
   }
 
-  const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${githubPath(input.slug)}`;
+  const filePath = existingFile?.path ?? githubPath(input.slug);
+  const url = githubContentsUrl(config.owner, config.repo, filePath);
   await githubRequest(url, {
     method: "PUT",
     body: JSON.stringify(body),
   });
 }
 
-async function deletePostFromGithub(slug: string, sha: string): Promise<void> {
+async function deletePostFromGithub(slug: string, file: GithubFileRef): Promise<void> {
   const config = githubConfig();
   if (!config) {
     throw new Error("GitHub credentials are not configured.");
@@ -288,7 +311,7 @@ async function deletePostFromGithub(slug: string, sha: string): Promise<void> {
   } = {
     message: `Delete post: ${slug}`,
     branch: GITHUB_BRANCH,
-    sha,
+    sha: file.sha,
   };
 
   const committerName = process.env.GITHUB_COMMIT_AUTHOR_NAME;
@@ -297,7 +320,7 @@ async function deletePostFromGithub(slug: string, sha: string): Promise<void> {
     body.committer = { name: committerName, email: committerEmail };
   }
 
-  const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${githubPath(slug)}`;
+  const url = githubContentsUrl(config.owner, config.repo, file.path);
   await githubRequest(url, {
     method: "DELETE",
     body: JSON.stringify(body),
@@ -347,8 +370,8 @@ export async function updatePost(
   const fileContent = serializePost(nextInput, current.created_at, updatedAt);
 
   if (githubConfig()) {
-    const sha = await getGithubFileSha(current.slug);
-    await commitPostToGithub(nextInput, fileContent, `Update post: ${input.title}`, sha);
+    const existingFile = await getGithubFileRef(current.slug);
+    await commitPostToGithub(nextInput, fileContent, `Update post: ${input.title}`, existingFile);
   } else if (canWriteLocally()) {
     writeLocalPost(nextInput, current.created_at, updatedAt);
   } else {
@@ -361,12 +384,14 @@ export async function deletePost(id: string): Promise<void> {
   if (!current) return;
 
   if (githubConfig()) {
-    const sha = await getGithubFileSha(current.slug);
-    if (!sha) {
-      throw new Error(`Cannot delete post because GitHub file was not found: ${githubPath(current.slug)}`);
+    const existingFile = await getGithubFileRef(current.slug);
+    if (!existingFile) {
+      throw new Error(
+        `Cannot delete post because GitHub file was not found. Tried: ${githubPathCandidates(current.slug).join(", ")}`
+      );
     }
 
-    await deletePostFromGithub(current.slug, sha);
+    await deletePostFromGithub(current.slug, existingFile);
   } else if (canWriteLocally()) {
     deleteLocalPost(current.slug);
   } else {
