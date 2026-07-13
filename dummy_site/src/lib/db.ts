@@ -1,7 +1,26 @@
 import fs from "fs";
 import path from "path";
 
-const CONTENT_DIR = path.join(process.cwd(), "content", "posts");
+function contentDirCandidates(): string[] {
+  return [
+    path.join(process.cwd(), "content", "posts"),
+    path.join(process.cwd(), "dummy_site", "content", "posts"),
+  ];
+}
+
+function hasMarkdownFiles(candidate: string): boolean {
+  return fs.existsSync(candidate) && fs.readdirSync(candidate).some((file) => file.endsWith(".md"));
+}
+
+function resolveContentDir(): string {
+  const candidates = contentDirCandidates();
+
+  const withMarkdown = candidates.find(hasMarkdownFiles);
+
+  return withMarkdown ?? candidates[0];
+}
+
+const CONTENT_DIR = resolveContentDir();
 const GITHUB_CONTENT_DIR = process.env.GITHUB_CONTENT_DIR ?? "dummy_site/content/posts";
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
 
@@ -34,6 +53,11 @@ function postPath(slug: string): string {
   return path.join(CONTENT_DIR, `${slug}.md`);
 }
 
+function readableContentDirs(): string[] {
+  const dirs = contentDirCandidates().filter(hasMarkdownFiles);
+  return dirs.length > 0 ? dirs : [CONTENT_DIR];
+}
+
 function githubPath(slug: string): string {
   return `${GITHUB_CONTENT_DIR.replace(/\/$/, "")}/${slug}.md`;
 }
@@ -47,17 +71,14 @@ function escapeFrontmatter(value: string): string {
 }
 
 function parseFrontmatter(fileContent: string): { data: Partial<Frontmatter>; content: string } {
-  if (!fileContent.startsWith("---\n")) {
+  const match = fileContent.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+
+  if (!match) {
     return { data: {}, content: fileContent };
   }
 
-  const end = fileContent.indexOf("\n---", 4);
-  if (end === -1) {
-    return { data: {}, content: fileContent };
-  }
-
-  const rawFrontmatter = fileContent.slice(4, end);
-  const content = fileContent.slice(end + 5).replace(/^\n/, "");
+  const rawFrontmatter = match[1];
+  const content = fileContent.slice(match[0].length);
   const data: Partial<Frontmatter> = {};
 
   for (const line of rawFrontmatter.split(/\r?\n/)) {
@@ -113,12 +134,12 @@ function readPostFile(filePath: string): Post | undefined {
 }
 
 function listPostFiles(): string[] {
-  if (!fs.existsSync(CONTENT_DIR)) return [];
-
-  return fs
-    .readdirSync(CONTENT_DIR)
-    .filter((file) => file.endsWith(".md"))
-    .map((file) => path.join(CONTENT_DIR, file));
+  return readableContentDirs().flatMap((dir) =>
+    fs
+      .readdirSync(dir)
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => path.join(dir, file))
+  );
 }
 
 function sortPosts(posts: Post[]): Post[] {
@@ -128,7 +149,13 @@ function sortPosts(posts: Post[]): Post[] {
 }
 
 export function listAllPosts(): Post[] {
-  return sortPosts(listPostFiles().map(readPostFile).filter((post): post is Post => Boolean(post)));
+  const postsBySlug = new Map<string, Post>();
+
+  for (const post of listPostFiles().map(readPostFile).filter((post): post is Post => Boolean(post))) {
+    postsBySlug.set(post.slug, post);
+  }
+
+  return sortPosts([...postsBySlug.values()]);
 }
 
 export function listPublishedPosts(): Post[] {
@@ -136,9 +163,12 @@ export function listPublishedPosts(): Post[] {
 }
 
 export function getPostBySlug(slug: string): Post | undefined {
-  const filePath = postPath(slug);
-  if (!fs.existsSync(filePath)) return undefined;
-  return readPostFile(filePath);
+  for (const dir of readableContentDirs()) {
+    const filePath = path.join(dir, `${slug}.md`);
+    if (fs.existsSync(filePath)) return readPostFile(filePath);
+  }
+
+  return undefined;
 }
 
 export function getPostById(id: string): Post | undefined {
