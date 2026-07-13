@@ -6,7 +6,7 @@
 
 ```text
 /admin/new 또는 /admin/[slug]/edit
-→ GitHub Contents API로 content/posts/*.md 커밋
+→ GitHub Contents API로 dummy_site/content/posts/*.md 커밋
 → GitHub main 브랜치 변경
 → Vercel이 자동 재배포
 → 공개 사이트에 글 반영
@@ -136,7 +136,7 @@ Project → Settings → Environment Variables
 | `GITHUB_OWNER` | `intellicastle02` | 저장소 owner |
 | `GITHUB_REPO` | `ai-writing-test-dummy` | 저장소 이름 |
 | `GITHUB_BRANCH` | `main` | 커밋 대상 브랜치 |
-| `GITHUB_CONTENT_DIR` | `content/posts` | Markdown 글 저장 경로 |
+| `GITHUB_CONTENT_DIR` | `dummy_site/content/posts` | GitHub 저장소 루트 기준 Markdown 글 저장 경로 |
 
 ### 권장 환경변수
 
@@ -213,7 +213,7 @@ Vercel 배포가 성공하면 관리자 저장 테스트를 한다.
 
 ```text
 관리자 폼 제출
-→ GitHub에 content/posts/vercel-git-db-test.md 커밋 생성
+→ GitHub에 dummy_site/content/posts/vercel-git-db-test.md 커밋 생성
 → Vercel이 main 변경을 감지
 → 새 Production Deployment 실행
 → 배포 완료 후 /posts/vercel-git-db-test 접속 가능

@@ -5,7 +5,7 @@ AI 글쓰기 자동화, 관리자 업로드 흐름, GA4 트래픽 기반 개선 
 현재 구조는 Vercel 배포를 위해 SQLite를 제거하고 Git-as-DB 방식으로 전환했습니다.
 
 ```text
-content/posts/*.md
+dummy_site/content/posts/*.md
 → Next.js가 글 목록/상세 페이지 렌더링
 → /admin 글 작성/수정
 → GitHub Contents API로 Markdown 파일 커밋
@@ -33,7 +33,7 @@ Vercel 운영에서는 파일시스템이 읽기 전용이므로 반드시 GitHu
 | `NEXT_PUBLIC_SITE_URL` | sitemap, robots, canonical URL 기준 주소 |
 | `GITHUB_TOKEN` | GitHub Contents API 커밋용 토큰 |
 | `GITHUB_OWNER` / `GITHUB_REPO` / `GITHUB_BRANCH` | 커밋 대상 저장소 |
-| `GITHUB_CONTENT_DIR` | 글 Markdown 저장 경로. 기본값 `content/posts` |
+| `GITHUB_CONTENT_DIR` | GitHub 저장소 루트 기준 글 Markdown 저장 경로. 기본값 `dummy_site/content/posts` |
 | `GITHUB_COMMIT_AUTHOR_NAME` / `GITHUB_COMMIT_AUTHOR_EMAIL` | 선택 커밋 작성자 정보 |
 
 ## 라우트

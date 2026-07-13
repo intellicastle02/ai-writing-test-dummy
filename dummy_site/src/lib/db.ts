@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "posts");
-const GITHUB_CONTENT_DIR = process.env.GITHUB_CONTENT_DIR ?? "content/posts";
+const GITHUB_CONTENT_DIR = process.env.GITHUB_CONTENT_DIR ?? "dummy_site/content/posts";
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
 
 export type Post = {
