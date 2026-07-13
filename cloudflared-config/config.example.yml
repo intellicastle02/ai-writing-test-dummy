@@ -1,0 +1,11 @@
+tunnel: <tunnel-id>
+credentials-file: C:\path\to\cloudflared\<tunnel-id>.json
+origincert: C:\path\to\cloudflared\cert.pem
+
+# QUIC/UDP 연결이 불안정하면 http2 사용을 고려하세요.
+# protocol: http2
+
+ingress:
+  - hostname: dummy.example.com
+    service: http://127.0.0.1:3000
+  - service: http_status:404

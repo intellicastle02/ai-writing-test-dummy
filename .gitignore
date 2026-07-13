@@ -1,0 +1,31 @@
+# cloudflared 실행파일 (PC마다 별도로 다운로드)
+tools/cloudflared.exe
+
+# 압축/분석 산출물
+*.zip
+_original_full_extract/
+
+# dependencies / build caches
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+
+# env / credentials
+**/.env
+**/.env.local
+**/.env.*.local
+!**/.env.example
+automation/credentials/
+cloudflared-config/*.json
+cloudflared-config/*.pem
+
+# local runtime data
+dummy_site/data/
+
+# Claude Code 로컬 전용 설정/권한 캐시
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
