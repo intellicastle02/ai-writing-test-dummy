@@ -39,7 +39,6 @@ export default async function AdminDashboardPage() {
             <tr className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
               <th className="py-2">제목</th>
               <th className="py-2">상태</th>
-              <th className="py-2">조회수</th>
               <th className="py-2">작성일</th>
               <th className="py-2"></th>
             </tr>
@@ -63,7 +62,6 @@ export default async function AdminDashboardPage() {
                     {post.status === "published" ? "게시됨" : "초안"}
                   </span>
                 </td>
-                <td className="py-3">{post.view_count}</td>
                 <td className="py-3 text-zinc-500">
                   {new Date(post.created_at).toLocaleDateString("ko-KR")}
                 </td>

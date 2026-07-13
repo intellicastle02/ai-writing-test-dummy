@@ -2,9 +2,11 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { getPostBySlug, incrementViewCount } from "@/lib/db";
+import { getPostBySlug, listPublishedPosts } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+export function generateStaticParams() {
+  return listPublishedPosts().map((post) => ({ slug: post.slug }));
+}
 
 function excerpt(markdown: string, length = 140): string {
   const plain = markdown
@@ -62,13 +64,11 @@ export default async function PostPage({
     notFound();
   }
 
-  incrementViewCount(slug);
-
   return (
     <article className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="text-3xl font-semibold">{post.title}</h1>
       <div className="mt-2 text-sm text-zinc-500">
-        {new Date(post.created_at).toLocaleDateString("ko-KR")} · 조회수 {post.view_count + 1}
+        {new Date(post.created_at).toLocaleDateString("ko-KR")}
       </div>
       <div className="prose prose-zinc mt-8 max-w-none dark:prose-invert">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>

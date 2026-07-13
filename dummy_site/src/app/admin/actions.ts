@@ -51,7 +51,7 @@ export async function createPostAction(formData: FormData) {
   }
 
   const slug = uniqueSlug(slugify(rawSlug || title));
-  dbCreatePost({ slug, title, content, status });
+  await dbCreatePost({ slug, title, content, status });
 
   revalidatePath("/");
   revalidatePath("/admin");
@@ -61,7 +61,7 @@ export async function createPostAction(formData: FormData) {
 export async function updatePostAction(formData: FormData) {
   await requireAdmin();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   const content = String(formData.get("content") ?? "");
   const status = formData.get("status") === "published" ? "published" : "draft";
@@ -70,7 +70,7 @@ export async function updatePostAction(formData: FormData) {
     return;
   }
 
-  dbUpdatePost(id, { title, content, status });
+  await dbUpdatePost(id, { title, content, status });
 
   revalidatePath("/");
   revalidatePath("/admin");
@@ -80,9 +80,9 @@ export async function updatePostAction(formData: FormData) {
 export async function deletePostAction(formData: FormData) {
   await requireAdmin();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "");
   if (id) {
-    dbDeletePost(id);
+    await dbDeletePost(id);
     revalidatePath("/");
     revalidatePath("/admin");
   }

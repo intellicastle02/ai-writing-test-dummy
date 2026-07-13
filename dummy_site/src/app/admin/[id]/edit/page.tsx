@@ -10,7 +10,7 @@ export default async function EditPostPage({
 }) {
   await requireAdmin();
   const { id } = await params;
-  const post = getPostById(Number(id));
+  const post = getPostById(id);
 
   if (!post) {
     notFound();

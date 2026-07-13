@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { listPublishedPosts } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
-
 export default function Home() {
   const posts = listPublishedPosts();
 
@@ -22,7 +20,7 @@ export default function Home() {
                 {post.title}
               </Link>
               <div className="mt-1 text-sm text-zinc-500">
-                {new Date(post.created_at).toLocaleDateString("ko-KR")} · 조회수 {post.view_count}
+                {new Date(post.created_at).toLocaleDateString("ko-KR")}
               </div>
             </li>
           ))}

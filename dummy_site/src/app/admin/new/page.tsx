@@ -34,7 +34,7 @@ export default async function NewPostPage({
         </div>
         <div>
           <label htmlFor="slug" className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">
-            슬러그 (비워두면 자동 생성)
+            슬러그(비워두면 자동 생성)
           </label>
           <input
             id="slug"

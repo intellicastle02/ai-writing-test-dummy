@@ -4,6 +4,7 @@ tools/cloudflared.exe
 # 압축/분석 산출물
 *.zip
 _original_full_extract/
+runs/
 
 # dependencies / build caches
 **/node_modules/
