@@ -2,8 +2,8 @@
 slug: "green-onion-flavor-guide"
 title: "파, 국물 한 그릇의 마지막을 완성하는 향"
 status: "published"
-created_at: "2026-07-14T15:00:00+09:00"
-updated_at: "2026-07-14T15:00:00+09:00"
+created_at: "2026-07-14T11:33:29+09:00"
+updated_at: "2026-07-14T11:33:29+09:00"
 ---
 
 ## 냉장고 채소칸에 늘 파가 있는 이유

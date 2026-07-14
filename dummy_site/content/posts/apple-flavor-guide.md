@@ -2,8 +2,8 @@
 slug: "apple-flavor-guide"
 title: "사과, 아삭함과 새콤달콤함 사이의 균형"
 status: "published"
-created_at: "2026-07-14T10:00:00+09:00"
-updated_at: "2026-07-14T10:00:00+09:00"
+created_at: "2026-07-14T12:03:37+09:00"
+updated_at: "2026-07-14T12:03:37+09:00"
 ---
 
 ## 냉장고에 항상 사과가 있는 이유
