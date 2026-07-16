@@ -1,27 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { createPost, getPostBySlug, getUniqueSlug } from "@/lib/db";
 import { slugify } from "@/lib/slugify";
+import { authorizeAutomationRequest } from "@/lib/automation-auth";
 
 export const dynamic = "force-dynamic";
 
-function unauthorized(): Response {
-  return Response.json({ error: "Unauthorized" }, { status: 401 });
-}
-
 export async function POST(request: Request): Promise<Response> {
-  const expectedKey = process.env.AUTOMATION_API_KEY;
-  if (!expectedKey) {
-    return Response.json(
-      { error: "AUTOMATION_API_KEY is not configured on the server." },
-      { status: 503 }
-    );
-  }
-
-  const authHeader = request.headers.get("authorization") ?? "";
-  const providedKey = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (providedKey !== expectedKey) {
-    return unauthorized();
-  }
+  const authError = authorizeAutomationRequest(request);
+  if (authError) return authError;
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
