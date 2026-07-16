@@ -2,14 +2,15 @@
 
 AI 글쓰기 자동화, 관리자 업로드 흐름, GA4 트래픽 기반 개선 루프를 테스트하기 위한 Next.js 블로그 사이트입니다.
 
-현재 구조는 Vercel 배포를 위해 SQLite를 제거하고 Git-as-DB 방식으로 전환했습니다.
+현재 구조는 Vercel 배포와 Supabase 콘텐츠 저장소를 사용합니다. GitHub에는 사이트 코드와
+마이그레이션만 저장하며, 게시글 생성·수정·삭제는 Vercel 서버에서 Supabase로 직접 반영합니다.
 
 ```text
-dummy_site/content/posts/*.md
-→ Next.js가 글 목록/상세 페이지 렌더링
-→ /admin 글 작성/수정
-→ GitHub Contents API로 Markdown 파일 커밋
-→ Vercel Git 연동으로 자동 재배포
+Supabase posts 테이블
+→ Next.js 서버 컴포넌트가 글 목록/상세 페이지 렌더링
+→ /admin 글 작성/수정/삭제
+→ Vercel Server Action이 Supabase CRUD 실행
+→ 재배포 없이 즉시 반영
 ```
 
 ## 실행
@@ -31,10 +32,22 @@ Vercel 운영에서는 파일시스템이 읽기 전용이므로 반드시 GitHu
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | 관리자 로그인 계정 |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4 측정 ID |
 | `NEXT_PUBLIC_SITE_URL` | sitemap, robots, canonical URL 기준 주소 |
-| `GITHUB_TOKEN` | GitHub Contents API 커밋용 토큰 |
-| `GITHUB_OWNER` / `GITHUB_REPO` / `GITHUB_BRANCH` | 커밋 대상 저장소 |
-| `GITHUB_CONTENT_DIR` | GitHub 저장소 루트 기준 글 Markdown 저장 경로. 기본값 `dummy_site/content/posts` |
-| `GITHUB_COMMIT_AUTHOR_NAME` / `GITHUB_COMMIT_AUTHOR_EMAIL` | 선택 커밋 작성자 정보 |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 공개 글 읽기용 Publishable key |
+| `SUPABASE_SECRET_KEY` | 관리자 CRUD용 서버 전용 Secret key |
+
+## Supabase 초기 설정과 기존 글 이관
+
+1. Supabase SQL Editor에서 `supabase/migrations/202607160001_initial_content_store.sql`을 실행합니다.
+2. `.env.local`에 `.env.example`의 Supabase 변수를 설정합니다.
+3. 기존 Markdown 글을 한 번 가져옵니다.
+
+```bash
+npm run supabase:import
+```
+
+가져오기는 slug 기준 upsert라 재실행할 수 있습니다. 성공 후 콘텐츠 원본은 Supabase이며,
+`content/posts/*.md`는 더 이상 런타임에서 읽거나 수정하지 않습니다.
 
 ## 라우트
 
@@ -50,6 +63,6 @@ Vercel 운영에서는 파일시스템이 읽기 전용이므로 반드시 GitHu
 ## 자동화 테스트 포인트
 
 - Claude/Codex/Chrome 자동화는 기존처럼 `/admin/login → /admin/new → 제출` 흐름을 사용합니다.
-- 저장 결과는 SQLite가 아니라 GitHub 커밋으로 남습니다.
-- Vercel을 연결하면 커밋 후 보통 수십 초~수분 내 새 배포가 생성됩니다.
+- 저장 결과는 Supabase의 `posts`, `post_revisions`, `post_events`에 남습니다.
+- 글 변경은 Vercel 재배포 없이 즉시 반영됩니다.
 - Notion은 작업 큐/검수표로 두고, 실제 사이트 콘텐츠 원본은 Git의 Markdown 파일로 둡니다.

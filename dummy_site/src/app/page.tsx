@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { listPublishedPosts } from "@/lib/db";
 
-export default function Home() {
-  const posts = listPublishedPosts();
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const posts = await listPublishedPosts();
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
