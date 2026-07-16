@@ -33,8 +33,8 @@ export async function logout() {
   redirect("/admin/login");
 }
 
-function uniqueSlug(candidate: string): string {
-  if (!getPostBySlug(candidate)) return candidate;
+async function uniqueSlug(candidate: string): Promise<string> {
+  if (!(await getPostBySlug(candidate))) return candidate;
   return `${candidate}-${Date.now().toString(36)}`;
 }
 
@@ -50,11 +50,12 @@ export async function createPostAction(formData: FormData) {
     redirect("/admin/new?error=title");
   }
 
-  const slug = uniqueSlug(slugify(rawSlug || title));
+  const slug = await uniqueSlug(slugify(rawSlug || title));
   await dbCreatePost({ slug, title, content, status });
 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath(`/posts/${slug}`);
   redirect("/admin");
 }
 
@@ -74,6 +75,7 @@ export async function updatePostAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/posts/[slug]", "page");
   redirect("/admin");
 }
 
@@ -85,7 +87,7 @@ export async function deletePostAction(formData: FormData) {
     await dbDeletePost(id);
     revalidatePath("/");
     revalidatePath("/admin");
-    revalidatePath(`/posts/${id}`);
+    revalidatePath("/posts/[slug]", "page");
   }
 
   redirect("/admin");

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   await requireAdmin();
-  const posts = listAllPosts();
+  const posts = await listAllPosts();
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">

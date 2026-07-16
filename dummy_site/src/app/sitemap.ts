@@ -3,8 +3,10 @@ import { listPublishedPosts } from "@/lib/db";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dummy.jeezdev.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const posts = listPublishedPosts();
+export const dynamic = "force-dynamic";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const posts = await listPublishedPosts();
 
   return [
     {
