@@ -13,6 +13,7 @@ export type Post = {
   excerpt: string | null;
   meta_title: string | null;
   meta_description: string | null;
+  source: string;
   created_at: string;
   updated_at: string;
   published_at: string | null;
@@ -24,6 +25,7 @@ export type PostInput = {
   title: string;
   content: string;
   status: "draft" | "published";
+  source?: string;
 };
 
 function requiredEnv(name: string, fallbackName?: string): string {
@@ -124,6 +126,7 @@ export async function createPost(input: PostInput): Promise<string> {
     .from("posts")
     .insert({
       ...input,
+      source: input.source ?? "admin",
       published_at: input.status === "published" ? new Date().toISOString() : null,
     })
     .select("id")
@@ -131,6 +134,11 @@ export async function createPost(input: PostInput): Promise<string> {
 
   if (error) fail("create post", error);
   return data.id as string;
+}
+
+export async function getUniqueSlug(candidate: string): Promise<string> {
+  if (!(await getPostBySlug(candidate))) return candidate;
+  return `${candidate}-${Date.now().toString(36)}`;
 }
 
 export async function updatePost(

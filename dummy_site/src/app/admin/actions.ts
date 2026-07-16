@@ -12,7 +12,7 @@ import {
   createPost as dbCreatePost,
   updatePost as dbUpdatePost,
   deletePost as dbDeletePost,
-  getPostBySlug,
+  getUniqueSlug,
 } from "@/lib/db";
 import { slugify } from "@/lib/slugify";
 
@@ -33,11 +33,6 @@ export async function logout() {
   redirect("/admin/login");
 }
 
-async function uniqueSlug(candidate: string): Promise<string> {
-  if (!(await getPostBySlug(candidate))) return candidate;
-  return `${candidate}-${Date.now().toString(36)}`;
-}
-
 export async function createPostAction(formData: FormData) {
   await requireAdmin();
 
@@ -50,7 +45,7 @@ export async function createPostAction(formData: FormData) {
     redirect("/admin/new?error=title");
   }
 
-  const slug = await uniqueSlug(slugify(rawSlug || title));
+  const slug = await getUniqueSlug(slugify(rawSlug || title));
   await dbCreatePost({ slug, title, content, status });
 
   revalidatePath("/");
